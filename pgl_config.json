@@ -32,7 +32,6 @@
         "HTTP webserver address, by default pglookout binds to all interfaces."
     ],
     "http_address": "",
-
     "http_port": 15000,
     "known_gone_nodes": [],
     "log_level": "DEBUG",
@@ -47,11 +46,15 @@
         "on the state of the cluster. Useful especially during net splits."
     ],
     "observers": {
-        "blacksmith.muppy.ovh": "http://blacksmith.muppy.ovh:15000"
+        "blacksmith.muppy.ovh": "http://blacksmith.muppy.ovh:15000",
+        "mpypg-gr-1.muppy.ovh": "http://mpypg-gr-1.muppy.ovh:15000"
+    },
+    "//observers": {
     },
 
     "own_db__help": "The key of the entry in remote_conns that matches this node.",
-    "own_db": null,
+    "//own_db": null,
+    "own_db": "v11-main-5432@mpypg-gr-1.muppy.ovh",
     
     "pg_data_directory": "/var/lib/pgsql/data",
     "pg_start_command": "",

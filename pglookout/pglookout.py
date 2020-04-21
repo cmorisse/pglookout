@@ -322,7 +322,7 @@ class PgLookout:
                 self.log.warning("No standby nodes set, master node: %r", master_node)
                 return
             self.consider_failover(own_state, master_node, standby_nodes)
-
+    
     def consider_failover(self, own_state, master_node, standby_nodes):
         if not master_node:
             # no master node at all in the cluster?
@@ -585,6 +585,9 @@ class PgLookout:
             self.log.exception("Problem unlinking: %r", filepath)
             self.stats.unexpected_exception(ex, where="delete_alert_file")
 
+    def broadcast_cluster_stats(self):
+        pass
+
     def main_loop(self):
         while self.running:
             try:
@@ -597,6 +600,12 @@ class PgLookout:
             except Exception as ex:  # pylint: disable=broad-except
                 self.log.exception("Failed to write cluster state")
                 self.stats.unexpected_exception(ex, where="main_loop_writer_cluster_state")
+            try:
+                self.broadcast_cluster_stats()
+            except Exception as ex:  # pylint: disable=broad-except
+                self.log.exception("Failed to broadcast cluster stats")
+                self.stats.unexpected_exception(ex, where="main_loop_broadcast_cluster_stats")
+            
             try:
                 self.failover_decision_queue.get(timeout=float(self.config.get("replication_state_check_interval", 5.0)))
                 self.log.info("Immediate failover check completed")
