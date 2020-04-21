@@ -12,6 +12,7 @@ from http.server import HTTPServer, SimpleHTTPRequestHandler
 from logging import getLogger
 from socketserver import ThreadingMixIn
 from threading import Thread
+from .common import json_datetime_serializer
 
 
 class ThreadedWebServer(ThreadingMixIn, HTTPServer):
@@ -54,7 +55,7 @@ class RequestHandler(SimpleHTTPRequestHandler):
         if self.path.startswith("/state.json"):
             self.send_response(200)
             self.send_header('Content-type', 'application/json')
-            response = json.dumps(self.server.cluster_state, indent=4).encode("utf8")
+            response = json.dumps(self.server.cluster_state, indent=4, default=json_datetime_serializer).encode("utf8")
             self.send_header('Content-length', len(response))
             self.end_headers()
             self.wfile.write(response)

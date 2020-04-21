@@ -18,9 +18,21 @@
     ],
     "db_poll_interval": 10,
 
+    "replication_state_check_interval__help": [
+        "(default 5.0)",
+        "How often should pglookout check the replication state in order to make",
+        "decisions on should the node be promoted."
+    ],
+    "replication_state_check_interval": 10,
+    
     "failover_command": "/usr/bin/failover_command",
     "failover_sleep_time": 0.0,
+    "http_address__help": [
+        "(default \"\")",
+        "HTTP webserver address, by default pglookout binds to all interfaces."
+    ],
     "http_address": "",
+
     "http_port": 15000,
     "known_gone_nodes": [],
     "log_level": "DEBUG",
@@ -39,7 +51,7 @@
     },
 
     "own_db__help": "The key of the entry in remote_conns that matches this node.",
-    "own_db": "v11-main-5432@mpypg-gr-1.muppy.ovh",
+    "own_db": null,
     
     "pg_data_directory": "/var/lib/pgsql/data",
     "pg_start_command": "",
@@ -55,12 +67,12 @@
     "remote_conns__example": {
         "1.2.3.4": "host=1.2.3.4 dbname=postgres user=pglookout password=fake_pass",
         "2.3.4.5": "host=2.3.4.5 dbname=postgres user=pglookout password=fake_pass",
-        "v11-main-5432@mpypg-gr-2.muppy.ovh": "host=mpypg-gr-1.muppy.ovh dbname=postgres user=pglookout password=pglookout sslmode=require",
-        "v11-main-5432@mpypg-gr-3.muppy.ovh": "host=mpypg-gr-1.muppy.ovh dbname=postgres user=pglookout password=pglookout sslmode=require",
         "v11-main-5432@mpypg-gr-4.muppy.ovh": "host=mpypg-gr-1.muppy.ovh dbname=postgres user=pglookout password=pglookout sslmode=require"
     },
     "remote_conns": {
-        "v11-main-5432@mpypg-gr-1.muppy.ovh": "host=mpypg-gr-1.muppy.ovh dbname=postgres user=pglookout password=pglookout sslmode=require"
+        "v11-main-5432@mpypg-gr-1.muppy.ovh": "host=mpypg-gr-1.muppy.ovh dbname=postgres user=pglookout password=pglookout sslmode=require",
+        "v11-main-5432@mpypg-gr-2.muppy.ovh": "host=mpypg-gr-2.muppy.ovh dbname=postgres user=pglookout password=pglookout sslmode=require",
+        "v11-main-5432@mpypg-gr-3.muppy.ovh": "host=mpypg-gr-3.muppy.ovh dbname=postgres user=pglookout password=pglookout sslmode=require"
     },
 
     "syslog__help": "(default false) Determines whether syslog logging should be turned on or not.",
@@ -89,6 +101,7 @@
     "maintenance_mode_file__help": [
         "default: \"/tmp/pglookout_maintenance_mode_file\"",
         "If a file exists in this location, this node will not be considered for promotion to master."
-    ]
+    ],
+    "collect_extended_replication_status": true
 
 }

@@ -23,6 +23,7 @@ import psycopg2
 import requests
 import select
 import time
+import timeit
 
 
 class PglookoutTimeout(Exception):
@@ -114,6 +115,9 @@ class ClusterMonitor(Thread):
                 self.log.error("Time difference between us and observer node %r is %r, response: %r, ignoring response",
                                instance, time_diff, response.json())  # pylint: disable=no-member
                 return None
+            else:
+                self.log.debug("Time difference between us and observer node %r is %r, response: %r, ignoring response",
+                               instance, time_diff, response.json())  # pylint: disable=no-member
             result.update(response.json())  # pylint: disable=no-member
         except requests.ConnectionError as ex:
             self.log.warning("%s (%s) fetching state from observer: %r, %r",
@@ -166,6 +170,7 @@ class ClusterMonitor(Thread):
                     "pg_last_xact_replay_timestamp()",
                     "pg_last_wal_receive_lsn() AS pg_last_xlog_receive_location",
                     "pg_last_wal_replay_lsn() AS pg_last_xlog_replay_location",
+                    "CASE WHEN pg_is_in_recovery() THEN pg_is_wal_replay_paused() ELSE false END AS pg_is_wal_replay_paused"
                 ]
             else:
                 fields = [
@@ -193,6 +198,7 @@ class ClusterMonitor(Thread):
                 wait_select(c.connection)
                 master_result = c.fetchone()
                 f_result["pg_last_xlog_replay_location"] = master_result["pg_last_xlog_replay_location"]
+
         except (PglookoutTimeout, psycopg2.DatabaseError, psycopg2.InterfaceError, psycopg2.OperationalError) as ex:
             self.log.warning("%s (%s) %s %s", ex.__class__.__name__, str(ex).strip(), phase, instance)
             db_conn.close()
@@ -203,6 +209,80 @@ class ClusterMonitor(Thread):
 
         result.update(self._parse_status_query_result(f_result))
         return result
+
+    def _standby_user_status_query(self, result, instance, db_conn):
+
+        if not self.config.get('collect_extended_replication_status') or db_conn.server_version < 100000:
+            return
+        result['extended_replication_stats'] = {}
+        # Extract recovery info then inject it into result
+        if result['connection']:
+            result['extended_replication_stats']['recovery_stats'] = {
+                "query_stat_timestamp": result['fetch_time'],
+                "query_stat_result": {
+                    "db_time": result['db_time'],
+                    "pg_is_in_recovery": result['pg_is_in_recovery'],
+                    "pg_last_xact_replay_timestamp": result['pg_last_xact_replay_timestamp'],
+                    "pg_last_wal_receive_lsn": result['pg_last_xlog_receive_location'],
+                    "pg_last_wal_replay_lsn": result['pg_last_xlog_replay_location'], 
+                    "pg_is_wal_replay_paused": result['pg_is_wal_replay_paused']
+                }
+            }
+            result['extended_replication_stats']['cluster_replication_stats_timestamp'] = result['fetch_time']
+            result['extended_replication_stats']['recovery_pg_is_in_recovery'] = result['pg_is_in_recovery']
+        else:
+            result['extended_replication_stats']['recovery_stats'] = {
+                "query_stat_timestamp": result['fetch_time'],
+                "query_stat_result": {},
+                "query_stat_error": "Connection failed!"
+            }
+
+        # Query server for replication and receiver stats
+        result['extended_replication_stats']['replication_stats'] = {
+            "query_stat_timestamp": get_iso_timestamp(),  # pglookout::fetch_time
+            "query_stat_result": [],
+            "query_stat_error": "Connection failed!"
+        }        
+        result['extended_replication_stats']['receiver_stats'] = {
+            "query_stat_timestamp": get_iso_timestamp(),  # pglookout::fetch_time
+            "query_stat_result": [],
+            "query_stat_error": "Connection failed!"
+        }        
+
+        if not db_conn:
+            db_conn = self._connect_to_db(instance, self.config["remote_conns"].get(instance))
+            if not db_conn:
+                return result
+        try:
+            phase = "querying pg_stat_replication from"
+            self.log.debug("%s %s", phase, instance)
+            c = db_conn.cursor(cursor_factory=RealDictCursor)
+            c.execute("SELECT * FROM pg_stat_replication")
+            wait_select(c.connection)
+            q_result = c.fetchall()
+            result['extended_replication_stats']['replication_stats']['query_stat_result'] = q_result
+            del result['extended_replication_stats']['replication_stats']['query_stat_error']
+
+            phase = "querying pg_stat_wal_receiver from"
+            self.log.debug("%s %s", phase, instance)
+            c = db_conn.cursor(cursor_factory=RealDictCursor)
+            c.execute("SELECT * FROM pg_stat_wal_receiver")
+            wait_select(c.connection)
+            q_result = c.fetchall()
+            if len(q_result)>1:
+                self.log.error("Multiple receivers for cluster:'%s'", instance)
+            elif len(q_result)==1:
+                q_result = q_result[0]                
+            result['extended_replication_stats']['receiver_stats']['query_stat_result'] = q_result
+            del result['extended_replication_stats']['receiver_stats']['query_stat_error']
+ 
+        except (PglookoutTimeout, psycopg2.DatabaseError, psycopg2.InterfaceError, psycopg2.OperationalError) as ex:
+            self.log.warning("%s (%s) %s %s", ex.__class__.__name__, str(ex).strip(), phase, instance)
+            db_conn.close()
+            self.db_conns[instance] = None
+            # Return "no connection" result in case of any error. If we get an error for master server after the initial
+            # query we'd end up returning completely invalid value for master's current position
+
 
     @staticmethod
     def _parse_status_query_result(result):
@@ -230,6 +310,7 @@ class ClusterMonitor(Thread):
     def standby_status_query(self, instance, db_conn):
         start_time = time.monotonic()
         result = self._standby_status_query(instance, db_conn)
+        self._standby_user_status_query(result, instance, db_conn)
         self.log.debug("DB state gotten from: %r was: %r, took: %.4fs to fetch",
                        instance, result, time.monotonic() - start_time)
         if instance in self.cluster_state:

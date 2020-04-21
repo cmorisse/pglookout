@@ -6,3 +6,6 @@ build/
 pglookout.egg-info/
 .coverage
 /pglookout/version.py
+py3?/
+multiple_master_warning
+.python-version

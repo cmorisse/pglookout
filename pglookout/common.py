@@ -36,3 +36,15 @@ def get_iso_timestamp(fetch_time=None):
     elif fetch_time.tzinfo:
         fetch_time = fetch_time.replace(tzinfo=None) - datetime.timedelta(seconds=fetch_time.utcoffset().seconds)
     return fetch_time.isoformat() + "Z"
+
+# Cf. https://stackoverflow.com/questions/11875770/how-to-overcome-datetime-datetime-not-json-serializable/36142844#36142844
+def json_datetime_serializer(obj):
+    """JSON serializer for objects not serializable by default json code"""
+    if isinstance(obj, datetime.datetime):
+        return get_iso_timestamp(obj)
+    if isinstance(obj, datetime.date):
+        return obj.isoformat()
+    if isinstance(obj, (datetime.timedelta,)):
+        return "%ss" % obj.total_seconds()
+    raise TypeError ("Type '%s' not serializable" % type(obj))
+

@@ -10,7 +10,7 @@ See the file `LICENSE` for details.
 
 from . import logutil, statsd, version
 from .cluster_monitor import ClusterMonitor
-from .common import convert_xlog_location_to_offset, parse_iso_datetime, get_iso_timestamp
+from .common import convert_xlog_location_to_offset, parse_iso_datetime, get_iso_timestamp, json_datetime_serializer
 from .pgutil import (
     create_connection_string, get_connection_info, get_connection_info_from_config_line)
 from .webserver import WebServer
@@ -164,7 +164,7 @@ class PgLookout:
         try:
             self.overall_state = {"db_nodes": self.cluster_state, "observer_nodes": self.observer_state,
                                   "current_master": self.current_master}
-            json_to_dump = json.dumps(self.overall_state, indent=4)
+            json_to_dump = json.dumps(self.overall_state, indent=4, default=json_datetime_serializer)
             self.log.debug("Writing JSON state file to: %r, file_size: %r", state_file_path, len(json_to_dump))
             with open(state_file_path + ".tmp", "w") as fp:
                 fp.write(json_to_dump)
