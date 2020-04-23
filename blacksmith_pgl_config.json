@@ -127,7 +127,7 @@
         "module": "muppy_pglookout_plugin",
         "callable__doc": "(default='broadcast_cluster_state')"
     }, 
-    "state_broadcaster_plugin": {
+    "//state_broadcaster_plugin": {
         "module": "muppy_pglookout_plugin",
         "callable__doc": "(default='broadcast_cluster_state')",
 
