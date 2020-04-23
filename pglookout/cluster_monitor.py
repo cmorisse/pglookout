@@ -9,7 +9,7 @@ See the file `LICENSE` for details.
 """
 
 from . import logutil
-from .common import get_iso_timestamp, parse_iso_datetime
+from .common import get_iso_timestamp, parse_iso_datetime, json_datetime_serializer
 from .pgutil import mask_connection_info
 from concurrent.futures import as_completed, ThreadPoolExecutor
 from email.utils import parsedate
@@ -23,7 +23,9 @@ import psycopg2
 import requests
 import select
 import time
+import json
 import timeit
+import importlib
 
 
 class PglookoutTimeout(Exception):
@@ -210,79 +212,15 @@ class ClusterMonitor(Thread):
         result.update(self._parse_status_query_result(f_result))
         return result
 
-    def _standby_user_status_query(self, result, instance, db_conn):
-
-        if not self.config.get('collect_extended_replication_status') or db_conn.server_version < 100000:
-            return
-        result['extended_replication_stats'] = {}
-        # Extract recovery info then inject it into result
-        if result['connection']:
-            result['extended_replication_stats']['recovery_stats'] = {
-                "query_stat_timestamp": result['fetch_time'],
-                "query_stat_result": {
-                    "db_time": result['db_time'],
-                    "pg_is_in_recovery": result['pg_is_in_recovery'],
-                    "pg_last_xact_replay_timestamp": result['pg_last_xact_replay_timestamp'],
-                    "pg_last_wal_receive_lsn": result['pg_last_xlog_receive_location'],
-                    "pg_last_wal_replay_lsn": result['pg_last_xlog_replay_location'], 
-                    "pg_is_wal_replay_paused": result['pg_is_wal_replay_paused']
-                }
-            }
-            result['extended_replication_stats']['cluster_replication_stats_timestamp'] = result['fetch_time']
-            result['extended_replication_stats']['recovery_pg_is_in_recovery'] = result['pg_is_in_recovery']
-        else:
-            result['extended_replication_stats']['recovery_stats'] = {
-                "query_stat_timestamp": result['fetch_time'],
-                "query_stat_result": {},
-                "query_stat_error": "Connection failed!"
-            }
-
-        # Query server for replication and receiver stats
-        result['extended_replication_stats']['replication_stats'] = {
-            "query_stat_timestamp": get_iso_timestamp(),  # pglookout::fetch_time
-            "query_stat_result": [],
-            "query_stat_error": "Connection failed!"
-        }        
-        result['extended_replication_stats']['receiver_stats'] = {
-            "query_stat_timestamp": get_iso_timestamp(),  # pglookout::fetch_time
-            "query_stat_result": [],
-            "query_stat_error": "Connection failed!"
-        }        
-
-        if not db_conn:
-            db_conn = self._connect_to_db(instance, self.config["remote_conns"].get(instance))
-            if not db_conn:
-                return result
-        try:
-            phase = "querying pg_stat_replication from"
-            self.log.debug("%s %s", phase, instance)
-            c = db_conn.cursor(cursor_factory=RealDictCursor)
-            c.execute("SELECT * FROM pg_stat_replication")
-            wait_select(c.connection)
-            q_result = c.fetchall()
-            result['extended_replication_stats']['replication_stats']['query_stat_result'] = q_result
-            del result['extended_replication_stats']['replication_stats']['query_stat_error']
-
-            phase = "querying pg_stat_wal_receiver from"
-            self.log.debug("%s %s", phase, instance)
-            c = db_conn.cursor(cursor_factory=RealDictCursor)
-            c.execute("SELECT * FROM pg_stat_wal_receiver")
-            wait_select(c.connection)
-            q_result = c.fetchall()
-            if len(q_result)>1:
-                self.log.error("Multiple receivers for cluster:'%s'", instance)
-            elif len(q_result)==1:
-                q_result = q_result[0]                
-            result['extended_replication_stats']['receiver_stats']['query_stat_result'] = q_result
-            del result['extended_replication_stats']['receiver_stats']['query_stat_error']
- 
-        except (PglookoutTimeout, psycopg2.DatabaseError, psycopg2.InterfaceError, psycopg2.OperationalError) as ex:
-            self.log.warning("%s (%s) %s %s", ex.__class__.__name__, str(ex).strip(), phase, instance)
-            db_conn.close()
-            self.db_conns[instance] = None
-            # Return "no connection" result in case of any error. If we get an error for master server after the initial
-            # query we'd end up returning completely invalid value for master's current position
-
+    def _user_cluster_state_query(self, result, instance, db_conn):
+        cluster_state_query_config = self.config.get('cluster_state_query_plugin')
+        if cluster_state_query_config: 
+            state_query_module_name = cluster_state_query_config['module']
+            if state_query_module_name:
+                state_query_module_callable = cluster_state_query_config.get('callable', 'cluster_state_query')
+                state_query_module = importlib.import_module(state_query_module_name, package=None)
+                getattr(state_query_module, state_query_module_callable)(self, result, instance, db_conn)
+        return
 
     @staticmethod
     def _parse_status_query_result(result):
@@ -310,9 +248,10 @@ class ClusterMonitor(Thread):
     def standby_status_query(self, instance, db_conn):
         start_time = time.monotonic()
         result = self._standby_status_query(instance, db_conn)
-        self._standby_user_status_query(result, instance, db_conn)
-        self.log.debug("DB state gotten from: %r was: %r, took: %.4fs to fetch",
-                       instance, result, time.monotonic() - start_time)
+        self._user_cluster_state_query(result, instance, db_conn)
+        self.log.debug("DB state gotten from: %r in %.4fs.", instance, time.monotonic() - start_time)
+        #self.log.debug("DB state gotten was: %r", result)
+
         if instance in self.cluster_state:
             self.cluster_state[instance].update(result)
         else:
@@ -331,6 +270,14 @@ class ClusterMonitor(Thread):
             else:
                 self.cluster_state[instance]["min_replication_time_lag"] = min(min_lag, now_lag)
 
+    def broadcast_cluster_state(self):
+        broadcaster_config = self.config.get('state_broadcaster_plugin', None)
+        if broadcaster_config:
+            broadcaster_module_name = broadcaster_config.get('module') 
+            broadcaster_callable = broadcaster_config.get('callable', 'broadcast_cluster_state')
+            broadcaster_module = importlib.import_module(broadcaster_module_name, package=None)
+            getattr(broadcaster_module, broadcaster_callable)(self)
+
     def main_monitoring_loop(self, requested_check=False):
         self.connect_to_cluster_nodes_and_cleanup_old_nodes()
         thread_count = len(self.db_conns) + len(self.config.get("observers", {}))
@@ -343,6 +290,12 @@ class ClusterMonitor(Thread):
             for future in as_completed(futures):
                 if future.exception():
                     self.log.error("Got error: %r when checking cluster state", future.exception())
+        try:
+            self.broadcast_cluster_state()
+        except Exception as ex:  # pylint: disable=broad-except
+            self.log.exception("Failed to brodcast cluster state")
+            self.stats.unexpected_exception(ex, where="cluster_monitor_brodcast_cluster_state")
+
         if requested_check:
             self.failover_decision_queue.put("Completed requested monitoring loop")
 
@@ -352,6 +305,6 @@ class ClusterMonitor(Thread):
             requested_check = False
             try:
                 requested_check = self.cluster_monitor_check_queue.get(timeout=self.config.get("db_poll_interval", 5.0))
-            except Empty:
+            except Empty:  # ==> Timeout
                 pass
             self.main_monitoring_loop(requested_check)
