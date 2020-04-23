@@ -25,8 +25,18 @@
     ],
     "replication_state_check_interval": 10,
     
-    "failover_command": "/usr/bin/failover_command",
-    "failover_sleep_time": 0.0,
+    "failover_command_help": [
+        "failover_command (default '')",
+        "Shell command to execute in case the node has deemed itself in need of promotion."
+    ],
+    "failover_command": "/home/pglookout/pglookout/mpy-failover-test.sh",
+    "//failover_command": "/usr/bin/failover_command",
+    "failover_sleep_time_help": [
+        "(default 0.0)",
+        "Time to sleep after a failover command has been issued."
+    ],
+    "failover_sleep_time": 5.0,
+
     "http_address__help": [
         "(default \"\")",
         "HTTP webserver address, by default pglookout binds to all interfaces."
