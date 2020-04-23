@@ -23,7 +23,7 @@
         "How often should pglookout check the replication state in order to make",
         "decisions on should the node be promoted."
     ],
-    "replication_state_check_interval": 10,
+    "replication_state_check_interval": 20,
     
     "failover_command_help": [
         "failover_command (default '')",
@@ -44,7 +44,7 @@
     "http_address": "",
     "http_port": 15000,
     "known_gone_nodes": [],
-    "log_level": "DEBUG",
+    "log_level": "INFO",
     "max_failover_replication_time_lag": 120.0,
     "never_promote_these_nodes": [],
 
@@ -55,20 +55,27 @@
         "are processes that don't take any actions, but simply give a third party viewpoint",
         "on the state of the cluster. Useful especially during net splits."
     ],
-    "observers": {
+    "//observers": {
         "blacksmith.muppy.ovh": "http://blacksmith.muppy.ovh:15000",
         "mpypg-gr-1.muppy.ovh": "http://mpypg-gr-1.muppy.ovh:15000"
-    },
-    "//observers": {
     },
 
     "own_db__help": "The key of the entry in remote_conns that matches this node.",
     "//own_db": null,
     "own_db": "v11-main-5432@mpypg-gr-1.muppy.ovh",
     
-    "pg_data_directory": "/var/lib/pgsql/data",
-    "pg_start_command": "",
-    "pg_stop_command": "",
+    "pg_data_directory": "/var/lib/postgresql/11/main",
+    "pg_start_command": "sudo pg_ctlcluster 11 main start",
+    "pg_stop_command": "sudo pg_ctlcluster 11 main stop",
+
+    "primary_conninfo_template__doc": [
+        "Connection string or connection info object template to use when setting a new ",
+        "primary_conninfo value for recovery.conf after a failover has happened. Any provided",
+        "hostname and database name in the template is ignored and they are replaced with",
+        "a replication connection to the new master node.",
+        "REQUIRED when autofollow is true.",
+        "Example: user=replicator password=fake_pass sslmode=require"
+    ],
     "primary_conninfo_template": "user=replicator password=fake_pass sslmode=require",
 
     "remote_conns__help": [
@@ -114,7 +121,5 @@
     "maintenance_mode_file__help": [
         "default: \"/tmp/pglookout_maintenance_mode_file\"",
         "If a file exists in this location, this node will not be considered for promotion to master."
-    ],
-    "collect_extended_replication_status": true
-
+    ]
 }
