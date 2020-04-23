@@ -16,7 +16,7 @@
         "Interval on how often should the connections defined in remote_conns be polled for ",
         "information on DB replication state."
     ],
-    "db_poll_interval": 3,
+    "db_poll_interval": 5,
 
     "replication_state_check_interval__help": [
         "(default 5.0)",
