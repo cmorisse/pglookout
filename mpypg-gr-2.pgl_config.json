@@ -16,14 +16,14 @@
         "Interval on how often should the connections defined in remote_conns be polled for ",
         "information on DB replication state."
     ],
-    "db_poll_interval": 3,
+    "db_poll_interval": 5,
 
     "replication_state_check_interval__help": [
         "(default 5.0)",
         "How often should pglookout check the replication state in order to make",
         "decisions on should the node be promoted."
     ],
-    "replication_state_check_interval": 10,
+    "replication_state_check_interval": 5,
     
     "failover_command": "/usr/bin/failover_command",
     "failover_sleep_time": 0.0,
@@ -32,7 +32,6 @@
         "HTTP webserver address, by default pglookout binds to all interfaces."
     ],
     "http_address": "",
-
     "http_port": 15000,
     "known_gone_nodes": [],
     "log_level": "DEBUG",
@@ -46,13 +45,13 @@
         "are processes that don't take any actions, but simply give a third party viewpoint",
         "on the state of the cluster. Useful especially during net splits."
     ],
-    "//observers": {
+    "observers": {
         "blacksmith.muppy.ovh": "http://blacksmith.muppy.ovh:15000"
     },
 
     "own_db__help": "The key of the entry in remote_conns that matches this node.",
-    "own_db": null,
-    "//own_db": "v11-main-5432@mpypg-gr-1.muppy.ovh",
+    "//own_db": null,
+    "own_db": "v11-main-5432@mpypg-gr-2.muppy.ovh",
     
     "pg_data_directory": "/var/lib/postgresql/11/main",
     "pg_start_command": "sudo pg_ctlcluster 11 main start",
@@ -111,18 +110,6 @@
     "maintenance_mode_file__help": [
         "default: \"/tmp/pglookout_maintenance_mode_file\"",
         "If a file exists in this location, this node will not be considered for promotion to master."
-    ],
-    "cluster_state_query_plugin": {
-        "module__doc": "required if 'cluster_state_query_plugin' is defined",
-        "module": "muppy_pglookout_plugin",
-        "callable__doc": "(default='broadcast_cluster_state')"
-    }, 
-    "state_broadcaster_plugin": {
-        "module": "muppy_pglookout_plugin",
-        "callable__doc": "(default='broadcast_cluster_state')",
-
-        "muppy_broadcast_url": "https://dev.cyril-dev.muppy.ovh/mpy/api/v1/pg_cluster_replication_stats",
-        "muppy_static_token": "hello"
-    }
+    ]
 
 }
