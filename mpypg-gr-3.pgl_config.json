@@ -113,7 +113,7 @@
         "Replication time lag at which point to execute over_warning_limit_command",
         "and to create a warning file."
     ],
-    "warning_replication_time_lag": 30.0,
+    "warning_replication_time_lag": 10,
     "over_warning_limit_command__help":[ 
         "(default null)",
         "Shell command to be executed once replication lag is warning_replication_time_lag"
