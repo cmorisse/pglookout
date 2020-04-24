@@ -118,6 +118,9 @@
         "(default null)",
         "Shell command to be executed once replication lag is warning_replication_time_lag"
     ],
+    "over_warning_limit_command": "/home/pglookout/pglookout/mpy-notify-over-warning-replication-time-limit.sh",
+
+
     "maintenance_mode_file__help": [
         "default: \"/tmp/pglookout_maintenance_mode_file\"",
         "If a file exists in this location, this node will not be considered for promotion to master."
