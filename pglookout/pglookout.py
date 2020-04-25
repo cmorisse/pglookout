@@ -101,16 +101,31 @@ class PgLookout:
         self.webserver.close()
 
     def load_config(self, _signal=None, _frame=None):
-        self.log.debug("Loading JSON config from: %r, signal: %r, frame: %r",
+        self.log.info("Loading JSON config from: %r, signal: %r, frame: %r",
                        self.config_path, _signal, _frame)
-
         previous_remote_conns = self.config.get("remote_conns")
         try:
-            with open(self.config_path) as fp:
-                self.config = json.load(fp)
+            if self.config_path.startswith('https'):
+                self.config = {}
+                resp = requests.get(self.config_path)
+                if resp.status_code==200:
+                    self.config = json.loads(resp.text)
+                else:
+                    self.log.exception("Failed to download config from:'%s'. Exiting.", self.config_path)
+                    sys.exit(1)
+            elif self.config_path.startswith('http'):
+                    self.log.exception("Config can only be downloaded from secured URL (https). Exiting")
+                    sys.exit(1)
+            else:
+                if not os.path.exists(self.config_path):
+                    self.log.exception("pglookout: config file:'%s' doesn't exist. Exiting.", self.config_path)
+                    sys.exit(1)
+                with open(self.config_path) as fp:
+                    self.config = json.load(fp)
         except Exception as ex:  # pylint: disable=broad-except
             self.log.exception("Invalid JSON config, exiting")
-            self.stats.unexpected_exception(ex, where="load_config")
+            if self.stats:
+                self.stats.unexpected_exception(ex, where="load_config")
             sys.exit(1)
 
         # statsd settings may have changed
@@ -640,10 +655,6 @@ def main(args=None):
                         version=version.__version__)
     parser.add_argument("config", help="configuration file")
     arg = parser.parse_args(args)
-
-    if not os.path.exists(arg.config):
-        print("pglookout: {!r} doesn't exist".format(arg.config))
-        return 1
 
     logutil.configure_logging()
 
