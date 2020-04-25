@@ -45,7 +45,7 @@
 
     "http_port": 15000,
     "known_gone_nodes": [],
-    "log_level": "DEBUG",
+    "log_level": "WARNING",
     "max_failover_replication_time_lag": 120.0,
     "never_promote_these_nodes": [],
 
@@ -126,7 +126,8 @@
         "module__doc": "required if 'cluster_state_query_plugin' is defined",
         "module": "muppy_pglookout_plugin",
         "callable__doc": "(default='broadcast_cluster_state')"
-    }, 
+    },
+    "notify_command": "/home/cmorisse/environment/pglookout/mpy-notify-test.sh",
     "//state_broadcaster_plugin": {
         "module": "muppy_pglookout_plugin",
         "callable__doc": "(default='broadcast_cluster_state')",
@@ -134,5 +135,6 @@
         "muppy_broadcast_url": "https://dev.cyril-dev.muppy.ovh/mpy/api/v1/pg_cluster_replication_stats",
         "muppy_static_token": "hello"
     }
+
 
 }

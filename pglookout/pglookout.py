@@ -235,20 +235,37 @@ class PgLookout:
                         self.log.warning("No knowledge on %r %r from observer: %r is in recovery",
                                          instance, db_state, observer_name)
 
+        newly_connected_masters = list(set(connected_master_nodes) - set(self.connected_master_nodes))
+        newly_disconnected_masters = list(set(disconnected_master_nodes) - set(self.disconnected_master_nodes))
         self.connected_master_nodes = connected_master_nodes
         self.disconnected_master_nodes = disconnected_master_nodes
         self.connected_observer_nodes = connected_observer_nodes
         self.disconnected_observer_nodes = disconnected_observer_nodes
 
         if not self.connected_master_nodes:
-            self.log.warning("No known master node, disconnected masters: %r", list(disconnected_master_nodes))
             if disconnected_master_nodes:
                 master_instance, master_node = list(disconnected_master_nodes.items())[0]
+            if newly_disconnected_masters and master_instance in newly_disconnected_masters:
+                self.log.warning("No known master node, masters: %r disconnected.", master_instance)
+                notify_command = self.config.get('notify_command')
+                if notify_command:
+                    self.execute_external_command([notify_command, master_instance, 'DISCONNECT'])
+                    self.log.warning("xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx notify")
+            else:
+                self.log.warning("No known master node, disconnected masters: %r", list(disconnected_master_nodes))
+            
         elif len(self.connected_master_nodes) == 1:
             master_instance, master_node = list(connected_master_nodes.items())[0]
             if disconnected_master_nodes:
                 self.log.warning("Picked %r as master since %r are in a disconnected state",
                                  master_instance, disconnected_master_nodes)
+            elif newly_connected_masters and master_instance in newly_connected_masters:
+                self.log.warning("Master %r reconnected.", master_instance)
+                notify_command = self.config.get('notify_command')
+                if notify_command:
+                    self.execute_external_command([notify_command, master_instance, 'RECONNECT'])
+                    self.log.warning("xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx notify")
+
         else:
             self.create_alert_file("multiple_master_warning")
             self.log.error("More than one master node connected_master_nodes: %r, disconnected_master_nodes: %r",
