@@ -43,6 +43,7 @@
                     "editable": "."
                 }
             }
-        }
+        },
+        "run_command": "pglookout 'https://dev.cyril-dev.muppy.ovh/mpy/api/v1/pgha_pglookout_config?muppy-static-token=hohoho&rcs_name=ha'"
     }
 }
