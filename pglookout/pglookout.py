@@ -89,6 +89,7 @@ class PgLookout:
         # cluster_monitor doesn't exist at the time of reading the config initially
         self.cluster_monitor.log.setLevel(self.log_level)
         self.webserver = WebServer(self.config, self.cluster_state, self.cluster_monitor_check_queue)
+        self.webserver.log.setLevel(self.log_level)
 
         logutil.notify_systemd("READY=1")
         self.log.info("PGLookout initialized, local hostname: %r, own_db: %r, cwd: %r",
