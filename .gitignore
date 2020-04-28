@@ -9,3 +9,5 @@ pglookout.egg-info/
 py3?/
 multiple_master_warning
 .python-version
+
+buildit-plugins/
