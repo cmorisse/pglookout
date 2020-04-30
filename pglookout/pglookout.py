@@ -8,15 +8,6 @@ This file is under the Apache License, Version 2.0.
 See the file `LICENSE` for details.
 """
 
-from . import logutil, statsd, version
-from .cluster_monitor import ClusterMonitor
-from .common import convert_xlog_location_to_offset, parse_iso_datetime, get_iso_timestamp, json_datetime_serializer
-from .pgutil import (
-    create_connection_string, get_connection_info, get_connection_info_from_config_line)
-from .webserver import WebServer
-from distutils.version import LooseVersion
-from psycopg2.extensions import adapt
-from queue import Empty, Queue
 import argparse
 import copy
 import datetime
@@ -32,6 +23,15 @@ import time
 import timeit
 import requests
 import importlib
+from queue import Empty, Queue
+from distutils.version import LooseVersion
+from . import logutil, statsd, version
+from .cluster_monitor import ClusterMonitor
+from .common import convert_xlog_location_to_offset, parse_iso_datetime, get_iso_timestamp, json_datetime_serializer
+from .pgutil import (
+    create_connection_string, get_connection_info, get_connection_info_from_config_line)
+from .webserver import WebServer
+from psycopg2.extensions import adapt
 
 
 class PgLookout:
@@ -103,7 +103,7 @@ class PgLookout:
 
     def load_config(self, _signal=None, _frame=None):
         self.log.info("Loading JSON config from: %r, signal: %r, frame: %r",
-                       self.config_path, _signal, _frame)
+                      self.config_path, _signal, _frame)
         previous_remote_conns = self.config.get("remote_conns")
         try:
             if self.config_path.startswith('https'):
@@ -115,8 +115,8 @@ class PgLookout:
                     self.log.exception("Failed to download config from:'%s'. Exiting.", self.config_path)
                     sys.exit(1)
             elif self.config_path.startswith('http'):
-                    self.log.exception("Config can only be downloaded from secured URL (https). Exiting")
-                    sys.exit(1)
+                self.log.exception("Config can only be downloaded from secured URL (https). Exiting.")
+                sys.exit(1)
             else:
                 if not os.path.exists(self.config_path):
                     self.log.exception("pglookout: config file:'%s' doesn't exist. Exiting.", self.config_path)
@@ -358,7 +358,7 @@ class PgLookout:
                 self.log.warning("No standby nodes set, master node: %r", master_node)
                 return
             self.consider_failover(own_state, master_node, standby_nodes)
-    
+  
     def consider_failover(self, own_state, master_node, standby_nodes):
         if not master_node:
             # no master node at all in the cluster?
@@ -654,9 +654,13 @@ def main(args=None):
         description="postgresql replication monitoring and failover daemon")
     parser.add_argument("--version", action="version", help="show program version",
                         version=version.__version__)
-    parser.add_argument("config", help="configuration file")
+    parser.add_argument(
+        "-c", "--config",
+        required=True,
+        default=os.environ.get('MPY_PGMONITOR_CONFIG'),
+        help="Configuration file name or URL. Can be set with environment variable 'MPY_PGMONITOR_CONFIG'."
+    )
     arg = parser.parse_args(args)
-
     logutil.configure_logging()
 
     pglookout = PgLookout(arg.config)
