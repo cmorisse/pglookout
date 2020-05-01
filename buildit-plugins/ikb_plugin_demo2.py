@@ -1,6 +1,6 @@
 """ Buildit Tasks Demo for the simplest plugin; just a file. """
-from invoke import task
-from invoke.config import DataProxy
+from inouk.invoke import task
+from inouk.invoke.config import DataProxy
 
 
 #def init(ctx, part):

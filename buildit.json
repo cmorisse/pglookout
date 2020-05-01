@@ -48,7 +48,7 @@
             "plugin": "ikb_plugins.systemd",
             "Description": "Muppy pglookout service",
             "ExecStart": "${py3x:venv_bin_path}/pglookout",
-            "//ExecStart_args": "--config=\"https://dev.cyril-dev.muppy.ovh/mpy/api/v1/pgha_pglookout_config?muppy-static-token=hohoho&rcs_name=ha\"",
+            "ExecStart_args": "--config=\"https://dev.cyril-dev.muppy.ovh/mpy/api/v1/pgha_pglookout_config?muppy-static-token=hohoho&rcs_name=ha\"",
             "Restart": "always",
             "User": "${ENV:USER}",
             "//Group": "${ENV:USER}",
