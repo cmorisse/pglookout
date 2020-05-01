@@ -11,3 +11,4 @@ multiple_master_warning
 .python-version
 
 buildit-plugins/ikb_plugins
+buildit-services/

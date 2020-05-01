@@ -44,8 +44,24 @@
                 }
             }
         },
-        "systemd-service": {
-            "plugin": "ikb_plugins.systemd"
+        "mpy_pglookout.service": {
+            "plugin": "ikb_plugins.systemd",
+            "Description": "Muppy pglookout service",
+            "ExecStart": "${py3x:venv_bin_path}/pglookout",
+            "//ExecStart_args": "--config=\"https://dev.cyril-dev.muppy.ovh/mpy/api/v1/pgha_pglookout_config?muppy-static-token=hohoho&rcs_name=ha\"",
+            "Restart": "always",
+            "User": "${ENV:USER}",
+            "//Group": "${ENV:USER}",
+            "Type": "simple",
+            "WorkingDirectory": "${root_directory}",
+            "//RootDirectory": "${}",
+            "//Environment": {
+                "MPY_MONITOR_CONFIG": "\"https://dev.cyril-dev.muppy.ovh/mpy/api/v1/pgha_pglookout_config?muppy-static-token=hohoho&rcs_name=ha\""
+            },
+            "Install with": [
+                "ikb systemd.setup-service -E \"--config=\"https://dev.cyril-dev.muppy.ovh/mpy/api/v1/pgha_pglookout_config?muppy-static-token=hohoho&rcs_name=ha\"\"",
+                "or uncomment ExecStart_args above"
+            ]
         },
         "run_command": "pglookout 'https://dev.cyril-dev.muppy.ovh/mpy/api/v1/pgha_pglookout_config?muppy-static-token=hohoho&rcs_name=ha'"
     }
