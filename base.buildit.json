@@ -1,0 +1,69 @@
+{
+    "buildit": {
+        "buildit-plugins": {
+            "plugin": "inouk.buildit.git_checkout",
+            "repositories": {
+                "core-buildit-plugins": {
+                    "repository": "git@gitlab.com:inouk/ikb.git",
+                    "directory": "ikb_plugins",
+                    "refspec__disabled": null,
+                    "update": true
+                }
+            }
+        },
+        "ENV": {
+            "plugin": "ikb_plugins.environ"
+        },
+        "py3x": {
+            "plugin": "ikb_plugins.virtualenv",
+            "name": "py3x",
+            "interpreter": "python3",
+            "setuptools-version": "46.1.3",
+            "pip-version": "20.0.2",
+            "eggs": {
+                "ikp3db": {
+                    "name": "ikp3db",
+                    "index-url__disabled": "git+git@github.com:cmorisse/ikp3db.git",
+                    "src__disabled": "dev_eggs", 
+                    "comments": [
+                        "py37x/bin/pip install --editable=git+ssh://git@github.com/cmorisse/ikp3db.git@next_release#egg=ikp3db --src=dev_eggs"
+                    ],
+                    "editable": "git+ssh://git@github.com/cmorisse/ikp3db.git@next_release#egg=ikp3db",
+                    "src": "../egg_sources",
+                    "version": "1.5.dev4"
+                },
+                "muppy_pglookout_plugin": {
+                    "name": "muppy_pglookout_plugin",
+                    "//editable": "../muppy_pglookout_plugin",
+                    "src": "../egg_sources",
+                    "editable": "git+ssh://git@gitlab.com/cmorisse/muppy_pglookout_plugin.git#egg=muppy_pglookout_plugin"
+                },
+                "pglookout": {
+                    "name": "pglookout",
+                    "editable": "."
+                }
+            }
+        },
+        "mpy_pglookout.service": {
+            "plugin": "ikb_plugins.systemd",
+            "Description": "Muppy pglookout service",
+            "ExecStart": "${py3x:venv_bin_path}/pglookout",
+            "//ExecStart_args": "--config=\"https://dev.cyril-dev.muppy.ovh/mpy/api/v1/pgha_pglookout_config?muppy-static-token=hohoho&rcs_name=ha\"",
+            "///ExecStart_args": "--config=\"https://dev.cyril-dev.muppy.ovh/mpy/api/v1/pgha_pglookout_config?muppy-static-token=hohoho&cluster_name=mpypg-gr-2.muppy.ovh\"",
+            "Restart": "always",
+            "User": "${ENV:USER}",
+            "//Group": "${ENV:USER}",
+            "Type": "simple",
+            "WorkingDirectory": "${root_directory}",
+            "//RootDirectory": "${}",
+            "//Environment": {
+                "MPY_MONITOR_CONFIG": "\"https://dev.cyril-dev.muppy.ovh/mpy/api/v1/pgha_pglookout_config?muppy-static-token=hohoho&rcs_name=ha\""
+            },
+            "Install with": [
+                "ikb systemd.setup-service -E \"--config=\"https://dev.cyril-dev.muppy.ovh/mpy/api/v1/pgha_pglookout_config?muppy-static-token=hohoho&rcs_name=ha\"\"",
+                "or uncomment ExecStart_args above"
+            ]
+        },
+        "run_command": "pglookout 'https://dev.cyril-dev.muppy.ovh/mpy/api/v1/pgha_pglookout_config?muppy-static-token=hohoho&rcs_name=ha'"
+    }
+}
