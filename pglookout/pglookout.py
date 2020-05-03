@@ -65,6 +65,7 @@ class PgLookout:
         self.cluster_nodes_change_time = time.monotonic()
         self.cluster_monitor_check_queue = Queue()
         self.failover_decision_queue = Queue()
+        self.command_queue = Queue()
         self.load_config()
 
         signal.signal(signal.SIGHUP, self.load_config)
@@ -88,7 +89,7 @@ class PgLookout:
         )
         # cluster_monitor doesn't exist at the time of reading the config initially
         self.cluster_monitor.log.setLevel(self.log_level)
-        self.webserver = WebServer(self.config, self.cluster_state, self.cluster_monitor_check_queue)
+        self.webserver = WebServer(self.config, self.cluster_state, self.cluster_monitor_check_queue, self.command_queue)
         self.webserver.log.setLevel(self.log_level)
 
         logutil.notify_systemd("READY=1")
@@ -633,6 +634,13 @@ class PgLookout:
             except Exception as ex:  # pylint: disable=broad-except
                 self.log.exception("Failed to write cluster state")
                 self.stats.unexpected_exception(ex, where="main_loop_writer_cluster_state")
+            try:
+                command = self.command_queue.get(timeout=0)
+                if command:
+                    self.load_config()
+                    self.log.info("Config reloaded")
+            except Empty:
+                pass
             try:
                 self.failover_decision_queue.get(timeout=float(self.config.get("replication_state_check_interval", 5.0)))
                 self.log.info("Immediate failover check completed")

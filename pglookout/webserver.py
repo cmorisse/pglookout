@@ -19,15 +19,17 @@ class ThreadedWebServer(ThreadingMixIn, HTTPServer):
     cluster_state = None
     log = None
     cluster_monitor_check_queue = None
+    command_queue = None
     allow_reuse_address = True
 
 
 class WebServer(Thread):
-    def __init__(self, config, cluster_state, cluster_monitor_check_queue):
+    def __init__(self, config, cluster_state, cluster_monitor_check_queue, command_queue):
         Thread.__init__(self)
         self.config = config
         self.cluster_state = cluster_state
         self.cluster_monitor_check_queue = cluster_monitor_check_queue
+        self.command_queue = command_queue
         self.log = getLogger("WebServer")
         self.address = self.config.get("http_address", '')
         self.port = self.config.get("http_port", 15000)
@@ -40,6 +42,7 @@ class WebServer(Thread):
         self.server.cluster_state = self.cluster_state
         self.server.log = self.log
         self.server.cluster_monitor_check_queue = self.cluster_monitor_check_queue
+        self.server.command_queue = self.command_queue
         self.server.serve_forever()
 
     def close(self):
@@ -70,5 +73,13 @@ class RequestHandler(SimpleHTTPRequestHandler):
             self.send_response(204)
             self.send_header('Content-length', 0)
             self.end_headers()
+
+        elif self.path.startswith("/reload_config"):
+            self.server.command_queue.put('load_config')
+            self.server.log.info("Config reload requested")
+            self.send_response(204)
+            self.send_header('Content-length', 0)
+            self.end_headers()
+
         else:
             self.send_response(404)
