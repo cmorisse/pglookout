@@ -1,9 +1,17 @@
 {
     "__$extends": "base.buildit.json",
     "buildit": {
+        "buildit-plugins": {
+            "repositories": {
+                "core-buildit-plugins": {
+                    "// repository - uncomment for dev": "git@gitlab.com:inouk/ikb.git"
+                }
+            }
+        },        
         "mpy_pglookout.service": {
             "ExecStart_args": "--config=\"https://dev.cyril-dev.muppy.ovh/mpy/api/v1/pgha_pglookout_config?muppy-static-token=hohoho&rcs_name=ha\""
         },
+
         "py3x": {
             "eggs": {
                 "ikp3db": {

@@ -4,7 +4,7 @@
             "plugin": "inouk.buildit.git_checkout",
             "repositories": {
                 "core-buildit-plugins": {
-                    "repository": "git@gitlab.com:inouk/ikb.git",
+                    "repository": "https://gitlab.com/inouk/ikb.git",
                     "directory": "ikb_plugins",
                     "refspec__disabled": null,
                     "update": true
