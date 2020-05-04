@@ -28,7 +28,8 @@
                     "comments": [
                         "py37x/bin/pip install --editable=git+ssh://git@github.com/cmorisse/ikp3db.git@next_release#egg=ikp3db --src=dev_eggs"
                     ],
-                    "editable": "git+ssh://git@github.com/cmorisse/ikp3db.git@next_release#egg=ikp3db",
+                    "//editable -  uncomment for dev": "git+ssh://git@github.com/cmorisse/ikp3db.git@next_release#egg=ikp3db",
+                    "editable": "git+https://github.com/cmorisse/ikp3db.git@next_release#egg=ikp3db",
                     "src": "../egg_sources",
                     "version": "1.5.dev4"
                 },
@@ -36,7 +37,8 @@
                     "name": "muppy_pglookout_plugin",
                     "//editable": "../muppy_pglookout_plugin",
                     "src": "../egg_sources",
-                    "editable": "git+ssh://git@gitlab.com/cmorisse/muppy_pglookout_plugin.git#egg=muppy_pglookout_plugin"
+                    "//editable - uncomment for dev": "git+ssh://git@gitlab.com/cmorisse/muppy_pglookout_plugin.git#egg=muppy_pglookout_plugin",
+                    "editable": "git+https://gitlab.com/cmorisse/muppy_pglookout_plugin.git#egg=muppy_pglookout_plugin"
                 },
                 "pglookout": {
                     "name": "pglookout",

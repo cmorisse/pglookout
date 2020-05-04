@@ -3,6 +3,16 @@
     "buildit": {
         "mpy_pglookout.service": {
             "ExecStart_args": "--config=\"https://dev.cyril-dev.muppy.ovh/mpy/api/v1/pgha_pglookout_config?muppy-static-token=hohoho&rcs_name=ha\""
+        },
+        "py3x": {
+            "eggs": {
+                "ikp3db": {
+                    "//editable -  uncomment for dev": "git+ssh://git@github.com/cmorisse/ikp3db.git@next_release#egg=ikp3db"
+                },
+                "muppy_pglookout_plugin": {
+                    "//editable - uncomment for dev": "git+ssh://git@gitlab.com/cmorisse/muppy_pglookout_plugin.git#egg=muppy_pglookout_plugin",
+                } 
+            }
         }
     }
 }
