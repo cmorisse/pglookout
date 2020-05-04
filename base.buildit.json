@@ -30,13 +30,13 @@
                     ],
                     "//editable -  uncomment for dev": "git+ssh://git@github.com/cmorisse/ikp3db.git@next_release#egg=ikp3db",
                     "editable": "git+https://github.com/cmorisse/ikp3db.git@next_release#egg=ikp3db",
-                    "src": "../egg_sources",
+                    "//src": "../egg_sources",
                     "version": "1.5.dev4"
                 },
                 "muppy_pglookout_plugin": {
                     "name": "muppy_pglookout_plugin",
                     "//editable": "../muppy_pglookout_plugin",
-                    "src": "../egg_sources",
+                    "//src": "../egg_sources",
                     "//editable - uncomment for dev": "git+ssh://git@gitlab.com/cmorisse/muppy_pglookout_plugin.git#egg=muppy_pglookout_plugin",
                     "editable": "git+https://gitlab.com/cmorisse/muppy_pglookout_plugin.git#egg=muppy_pglookout_plugin"
                 },
