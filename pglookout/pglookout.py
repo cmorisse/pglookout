@@ -109,7 +109,7 @@ class PgLookout:
         try:
             if self.config_path.startswith('https'):
                 self.config = {}
-                resp = requests.get(self.config_path)
+                resp = requests.get(self.config_path, timeout=5)
                 if resp.status_code==200:
                     self.config = json.loads(resp.text)
                 else:
