@@ -66,6 +66,7 @@ class PgLookout:
         self.cluster_monitor_check_queue = Queue()
         self.failover_decision_queue = Queue()
         self.command_queue = Queue()
+        self.config = {}
         self.load_config()
 
         signal.signal(signal.SIGHUP, self.load_config)
@@ -108,22 +109,31 @@ class PgLookout:
         previous_remote_conns = self.config.get("remote_conns")
         try:
             if self.config_path.startswith('https'):
-                self.config = {}
                 resp = requests.get(self.config_path, timeout=5)
                 if resp.status_code==200:
                     self.config = json.loads(resp.text)
                 else:
-                    self.log.exception("Failed to download config from:'%s'. Exiting.", self.config_path)
-                    sys.exit(1)
+                    self.log.exception("Failed to download config from:'%s'.", self.config_path)
+                    if not self.config: # Exit only at start, keep previous config else
+                        self.log.exception("mpypgd: exiting.")
+                        sys.exit(1) 
+                    else:
+                        self.log.exception("mpypgd: Config unchanged.")          
             elif self.config_path.startswith('http'):
-                self.log.exception("Config can only be downloaded from secured URL (https). Exiting.")
-                sys.exit(1)
+                self.log.exception("Config can only be downloaded from secured URL (https).")
+                if not self.config: # Exit only at start, keep previous config else
+                    self.log.exception("mpypgd: exiting.")
+                    sys.exit(1)
+                else:
+                    self.log.exception("mpypgd: Config unchanged.")          
+
             else:
                 if not os.path.exists(self.config_path):
-                    self.log.exception("pglookout: config file:'%s' doesn't exist. Exiting.", self.config_path)
+                    self.log.exception("pglookout: config file:'%s' doesn't exist. Exiting", self.config_path)
                     sys.exit(1)
                 with open(self.config_path) as fp:
                     self.config = json.load(fp)
+
         except Exception as ex:  # pylint: disable=broad-except
             self.log.exception("Invalid JSON config, exiting")
             if self.stats:
@@ -638,7 +648,6 @@ class PgLookout:
                 command = self.command_queue.get(timeout=0)
                 if command:
                     self.load_config()
-                    self.log.info("Config reloaded")
             except Empty:
                 pass
             try:
