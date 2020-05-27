@@ -19,6 +19,7 @@ import signal
 import socket
 import subprocess
 import sys
+import traceback
 import time
 import timeit
 import requests
@@ -109,16 +110,47 @@ class PgLookout:
         previous_remote_conns = self.config.get("remote_conns")
         try:
             if self.config_path.startswith('https'):
-                resp = requests.get(self.config_path, timeout=5)
-                if resp.status_code==200:
-                    self.config = json.loads(resp.text)
-                else:
-                    self.log.exception("Failed to download config from:'%s'.", self.config_path)
+                nb_attempts = 0
+                while True:
+                    try:
+                        resp = requests.get(self.config_path, timeout=5)
+                        if resp.status_code == 200:
+                            self.config = json.loads(resp.text)
+                            break
+                        else:
+                            self.log.error(
+                                "Failed to download config from:'%s'. HTTP Error Code=%s",
+                                self.config_path,
+                                resp.status_code
+                            )
+                    except Exception as exc:
+                        last_frame_summary = traceback.extract_tb(sys.exc_info()[2], limit=1)[0]
+                        self.log.error(
+                            "%s at %s:%s",
+                            exc,
+                            last_frame_summary.filename,
+                            last_frame_summary.lineno)
+                    nb_attempts += 1
+                    if nb_attempts < 5:
+                        sleep_time = pow(2, nb_attempts)
+                        self.log.info(
+                            "Sleeping %s seconds before retry #%s",
+                            sleep_time,
+                            nb_attempts + 1
+                        )
+                        time.sleep(sleep_time)
+                    else:
+                        break
+
+                if nb_attempts==5:
                     if not self.config: # Exit only at start, keep previous config else
                         self.log.exception("mpypgd: exiting.")
-                        sys.exit(1) 
+                        sys.exit(1)
                     else:
-                        self.log.exception("mpypgd: Config unchanged.")          
+                        self.log.exception(
+                            "mpypgd: Failed 5 times to retreive config from '%s'. Config unchanged.",
+                            self.config_path
+                        )          
             elif self.config_path.startswith('http'):
                 self.log.exception("Config can only be downloaded from secured URL (https).")
                 if not self.config: # Exit only at start, keep previous config else
