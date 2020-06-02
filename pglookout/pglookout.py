@@ -311,8 +311,11 @@ class PgLookout:
                     self.execute_external_command([notify_command, master_instance, 'DISCONNECT'])
                     self.log.warning("xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx notify")
             else:
-                self.log.warning("No known master node, disconnected masters: %r", list(disconnected_master_nodes))
-            
+                self.log.warning(
+                    "No known master node, disconnected masters: %r",
+                    list(disconnected_master_nodes)
+                )
+
         elif len(self.connected_master_nodes) == 1:
             master_instance, master_node = list(connected_master_nodes.items())[0]
             if disconnected_master_nodes:
