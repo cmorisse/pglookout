@@ -142,7 +142,7 @@ class PgLookout:
                     else:
                         break
 
-                if nb_attempts==5:
+                if nb_attempts == 5:
                     if not self.config: # Exit only at start, keep previous config else
                         self.log.exception("mpypgd: exiting.")
                         sys.exit(1)
