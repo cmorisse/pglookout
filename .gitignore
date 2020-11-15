@@ -12,3 +12,7 @@ multiple_master_warning
 
 buildit-plugins/ikb_plugins
 buildit-services/
+
+mpy-pgfailover.sh
+mpy-pgnotify.sh
+mpy-pgnotify-time-lag-overflow.sh
